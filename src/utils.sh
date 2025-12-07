@@ -1,16 +1,35 @@
 #!/usr/bin/env bash
 
-echoerr() {
-  echo "$@" 1>&2
+# ANSI color codes
+readonly RED='\e[1;91m'
+readonly BLUE='\e[1;94m'
+readonly RESET='\e[0m'
+
+utils::log_info() {
+  printf "[${BLUE}INFO${RESET}] %s\n" "$*"
+}
+
+utils::log_error() {
+  printf "[${RED}ERROR${RESET}] %s\n" "$*" >&2
+  exit 1
+}
+
+utils::verify_required_env_vars() {
+  local required_vars=(
+    "GITHUB_REPOSITORY"
+    "GITHUB_EVENT_PATH"
+    "github_token"
+    "github_api_url"
+  )
+
+  for var in "${required_vars[@]}"; do
+    utils::env_variable_exist "$var"
+  done
 }
 
 utils::env_variable_exist() {
-  if [[ -z "${!1}" ]]; then
-    echoerr "The env variable $1 is required."
-    exit 1
+  local var_name="$1"
+  if [[ -z "${!var_name}" ]]; then
+    utils::log_error "The env variable '$var_name' is required."
   fi
-}
-
-utils::get_pr_number() {
-  jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH"
 }

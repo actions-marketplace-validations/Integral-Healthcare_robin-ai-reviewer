@@ -1,35 +1,116 @@
-# Robin AI
+<div align="center">
+  <h1>Robin AI</h1>
+  <a href="https://github.com/Integral-Healthcare/robin-ai-reviewer/releases">
+    <img src="https://img.shields.io/github/v/release/Integral-Healthcare/robin-ai-reviewer" alt="GitHub release (latest by date)">
+  </a>
+  <a href="https://github.com/Integral-Healthcare">
+    <img src="https://img.shields.io/badge/org-Integral--Healthcare-blue" alt="GitHub org">
+  </a>
+  <br>
+  <img src="/assets/robin.png" alt="Robin watercolor image" style="width: 350px;"/>
+</div>
 
-<img src="/assets/robin.png" alt="Robin watercolor image" style="width: 200px; height: 200px;"/>
+Named after Batman's assistant, Robin AI is an open source Github action that automatically reviews pull requests using AI models from OpenAI (GPT) or Anthropic (Claude). It analyzes your code changes and provides:
+- A quality score (0-100)
+- Actionable improvement suggestions
+- Sample code snippets for better implementation
+- Fast, automated feedback (average runtime: 14s)
 
-Named after Batman's assistant, Robin AI is an open source Github project that automatically reviews Github pull requests, providing a letter grade from A to F, suggested improvements, and sample code for improvement.
+## Table of Contents
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Example Output](#example-output)
+- [Performance](#performance)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Demo
-
-![Demo video](/assets/demo.gif)
-
-## Arguments
-
-| Name                | Required | Default Value             | Description                                                                                                       |
-|---------------------|----------|---------------------------|-------------------------------------------------------------------------------------------------------------------|
-| `GITHUB_TOKEN`      | Yes      | Automatically supplied    | A Github access token with the `repo` and `pull_request` scopes.                                                  |
-| `OPEN_AI_API_KEY`   | Yes      | N/A                       | An API key from Open AI's developer portal.                                                                       |
-| `gpt_model_name`    | No       | `gpt-3.5-turbo-0301`      | The name of the GPT model to use for text generation.                                                             |
-| `github_api_url`    | No       | `https://api.github.com`  | The URL for the Github API endpoint. (Only relevant to enterprise customers.)                                               |
+## Prerequisites
+- A GitHub repository with pull request workflows
+- An API key for your chosen AI provider:
+  - **OpenAI**: [Get an API key here](https://platform.openai.com/account/api-keys)
+  - **Claude (Anthropic)**: [Get an API key here](https://console.anthropic.com/settings/keys)
 
 ## Installation
+1. In your Github repository, navigate to the "Actions" tab
+2. Click "New workflow"
+3. Choose "Set up a workflow yourself"
+4. Create a new file (e.g., `robin.yml`) with one of these configurations:
 
-To use Robin AI in your Github project, you'll need to add it as a Github action. Here's how:
-
-1. In your Github repository, navigate to the "Actions" tab.
-2. Click on the "New workflow" button.
-3. Select the option to "Set up a workflow yourself".
-4. Copy and paste the following code into the new file:
-
+### Using OpenAI (Default)
 ```yml
 name: Robin AI Reviewer
 
-on: [pull_request]
+on:
+  pull_request:
+    branches: [main]
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Robin AI Reviewer
+        uses: Integral-Healthcare/robin-ai-reviewer@v[INSERT_LATEST_RELEASE]
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_PROVIDER: openai
+          AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+          AI_MODEL: o4-mini
+          files_to_ignore: |
+            "README.md"
+            "assets/*"
+            "package-lock.json"
+```
+
+### Using Claude (Anthropic)
+```yml
+name: Robin AI Reviewer
+
+on:
+  pull_request:
+    branches: [main]
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Robin AI Reviewer
+        uses: Integral-Healthcare/robin-ai-reviewer@v[INSERT_LATEST_RELEASE]
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_PROVIDER: claude
+          AI_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          AI_MODEL: claude-3-sonnet-20240229
+          files_to_ignore: |
+            "README.md"
+            "assets/*"
+            "package-lock.json"
+```
+
+### Legacy Configuration (Still Supported)
+```yml
+name: Robin AI Reviewer
+
+on:
+  pull_request:
+    branches: [main]
+    types:
+      - opened
+      - reopened
+      - ready_for_review
 
 jobs:
   build:
@@ -42,31 +123,79 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+          gpt_model_name: o4-mini
+          files_to_ignore: |
+            "README.md"
+            "assets/*"
+            "package-lock.json"
 ```
 
-5. Save the file with a name like `robin.yml`.
-6. Create a secret in your Github repository called `OPEN_AI_API_KEY` and set it to the value of your Open AI API key.
+5. Add your API key as a repository secret:
+   - Go to repository Settings → Secrets and Variables → Actions
+   - For OpenAI: Create a secret named `OPEN_AI_API_KEY`
+   - For Claude: Create a secret named `CLAUDE_API_KEY`
+   - Paste your API key as the value
 
-With those steps complete, Robin AI will automatically run every time a pull request is opened or edited in your Github repository.
+## Configuration
+
+### Parameters (Recommended)
+| Name | Required | Default | Description |
+|------|----------|---------|-------------|
+| `GITHUB_TOKEN` | Yes | Auto-supplied | GitHub token for API access |
+| `AI_PROVIDER` | No | `openai` | AI provider to use (`openai` or `claude`) |
+| `AI_API_KEY` | Yes | N/A | API key for the selected AI provider |
+| `AI_MODEL` | No | Provider-specific | AI model to use (see supported models below) |
+| `github_api_url` | No | `https://api.github.com` | GitHub API URL (for enterprise) |
+| `files_to_ignore` | No | (empty) | Files to exclude from review |
+
+### Legacy Parameters (Deprecated but still supported)
+| Name | Required | Default | Description |
+|------|----------|---------|-------------|
+| `OPEN_AI_API_KEY` | No | N/A | [DEPRECATED] Use `AI_API_KEY` instead |
+| `gpt_model_name` | No | N/A | [DEPRECATED] Use `AI_MODEL` instead |
 
 ## Usage
 
-When Robin AI runs, it will post a comment on the pull request with its letter grade, suggested improvements, and sample code for improvement. You can use this information to improve the quality of your code and make your pull requests more likely to be accepted.
+When Robin AI runs, it will post a comment on the pull request with its score out of 100, suggested improvements, and sample code for improvement. You can use this information to improve the quality of your code and make your pull requests more likely to be accepted.
+
+## Example Output
+When Robin AI reviews your pull request, you'll see a comment like this:
+
+<details>
+<summary>Score: 85/100</summary>
+
+Improvements:
+- Consider adding input validation for the user parameters
+- The error handling could be more specific
+- Variable naming could be more descriptive
+
+```python
+# Before
+def process(x):
+    return x * 2
+
+# After
+def process_user_input(value: int) -> int:
+    if not isinstance(value, int):
+        raise ValueError("Input must be an integer")
+    return value * 2
+```
+</details>
 
 ## Performance
-Great emphasis has been put on ensuring a performant runtime.
+- Docker Image Size: 15.6MB
+- Average Runtime: 14 seconds
+- Memory Usage: Minimal (<100MB)
 
-| Metric         | Value     |
-|----------------|-----------|
-| Docker Image Size  | 18.5MB   |
-| Average Action Runtime | 14s |
-
-The Docker image for Robin AI has a size of 18.5MB, which is relatively small and should be quick to download and use. On average, the Robin AI Github action runtime is 14 seconds, which means that it should be able to process pull requests quickly and efficiently. These metrics may vary depending on factors such as the size and complexity of the code being reviewed, the speed of the internet connection, and the availability of Open AI's API.
+## Demo
+See Robin AI in action: [View Demo](https://twitter.com/johnkuhn58/status/1656460223685509122)
 
 ## Contributing
-
-If you'd like to contribute to Robin AI, we welcome your input! Please feel free to submit issues or pull requests on our Github repository.
+We welcome contributions! Here's how you can help:
+- Submit bug reports or feature requests through [Issues](https://github.com/Integral-Healthcare/robin-ai-reviewer/issues)
+- Submit pull requests for bug fixes or new features
+- Improve documentation
+- Share feedback on [Twitter](https://twitter.com/johnkuhn58/)
 
 ## License
-
-Robin AI is licensed under the MIT License. See `LICENSE` for more information.
+Robin AI is MIT licensed. See [LICENSE](LICENSE) for details.

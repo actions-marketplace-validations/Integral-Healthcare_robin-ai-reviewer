@@ -1,14 +1,25 @@
 name: Robin AI Reviewer
 
-on: [pull_request]
+on:
+  pull_request:
+    branches: [main]
+    types:
+      - opened
+      - reopened
+      - ready_for_review
 
 jobs:
   build:
     runs-on: ubuntu-latest
     name: Review the open PR
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+          AI_PROVIDER: claude
+          AI_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          AI_MODEL: claude-3-sonnet-20240229
+          files_to_ignore: |
+            "README.md"
+            "assets/*"
