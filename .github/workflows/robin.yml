@@ -6,20 +6,24 @@ on:
     types:
       - opened
       - reopened
+      - synchronize
       - ready_for_review
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
-  build:
+  review:
     runs-on: ubuntu-latest
     name: Review the open PR
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AI_PROVIDER: claude
           AI_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-          AI_MODEL: claude-3-sonnet-20240229
-          files_to_ignore: |
-            "README.md"
-            "assets/*"
+          AI_MODEL: claude-sonnet-4-5
+          files_to_ignore: 'README.md assets/*'
